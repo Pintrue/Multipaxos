@@ -43,7 +43,6 @@ end
 def version :crashes do		# settings for crashing servers
   config = version :default 
   # settings omitted
-  }
 end
 
 end # module ----------------------------------------------------------------

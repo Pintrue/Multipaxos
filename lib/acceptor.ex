@@ -1,5 +1,5 @@
 defmodule Acceptor do
-	def start do
+	def start config do
 		# magic number ordered before any ballot sent by leaders
 		ballot_num = {-999, nil}
 		accepted = MapSet.new()
