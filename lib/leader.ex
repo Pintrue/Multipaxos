@@ -1,5 +1,5 @@
 defmodule Leader do
-	def start do
+	def start config do
 		ballot_num = {0, self()}
 		active = false
 		proposals = Map.new()
@@ -19,6 +19,7 @@ defmodule Leader do
 						spawn Commander, :start, [self(), acceptors, replicas, {ballot_num, s, c}]
 					end
 				end
+				next acceptors, replicas, ballot_num, active, proposals
 			{ :adopted, ballot_num, pvals } ->
 				pvals_list = MapSet.to_list(pvals)
 				slot_group = Enum.group_by(pvals_list, fn {_,s,_} -> s end)
@@ -29,11 +30,16 @@ defmodule Leader do
 					{slot, c}
 				end
 				proposals = Map.merge(proposals, Enum.into(pmax, %{}))
-				
-				# pvals_sorted = List.keysort(MapSet.to_list(pvals), 0)	# Map already sorted
-				# {_, s, c} = List.last(pvals_sorted)	# pmax
-				# proposals = 
+				for {s, c} <- proposals do
+					spawn Commander, :start, [self(), acceptors, replicas, {ballot_num, s, c}]
+				end
+				active = true
+				next acceptors, replicas, ballot_num, active, proposals
+			{ :preempted, {r, l} } ->
+				active = false
+				ballot_num = {r + 1, self()}
+				spawn Scout, :start, [self(), acceptors, ballot_num]
+				next acceptors, replicas, ballot_num, active, proposals
 		end
-		
 	end
 end

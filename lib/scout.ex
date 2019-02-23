@@ -22,7 +22,7 @@ defmodule Scout do
 				send leader, { :preempted, b }
 				exit(:normal)
 			end
-			next leader, acceptorsm ballot_num, ballot_num, waitfor, pvalues
+			next leader, acceptors, ballot_num, waitfor, pvalues
 		end
 		
 	end
