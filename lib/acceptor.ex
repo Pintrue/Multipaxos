@@ -1,5 +1,5 @@
 defmodule Acceptor do
-	def start config do
+	def start _ do
 		# magic number ordered before any ballot sent by leaders
 		ballot_num = {-999, nil}
 		accepted = MapSet.new()
@@ -9,14 +9,20 @@ defmodule Acceptor do
 	def next ballot_num, accepted do
 		receive do
 			{ :p1a, leader, b } ->
+				ballot_num =
 				if b > ballot_num do
-					ballot_num = b
+					b
+				else
+					ballot_num
 				end
 				send leader, { :p1b, self(), ballot_num, accepted }
 				next ballot_num, accepted
 			{ :p2a, leader, {b, s, c} } ->
+				accepted =
 				if b == ballot_num do
-					accepted = MapSet.put(accepted, {b, s, c})
+					MapSet.put(accepted, {b, s, c})
+				else
+					accepted
 				end
 				send leader, { :p2b, self(), ballot_num }
 				next ballot_num, accepted

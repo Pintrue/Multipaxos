@@ -11,6 +11,7 @@ defmodule Commander do
 		receive do
 			{ :p2b, a, b } ->
 				{ballot_num, s, c} = p
+				waitfor =
 				if b == ballot_num do
 					waitfor = waitfor -- [a]
 					if length(waitfor) < length(acceptors) / 2 do
@@ -19,6 +20,7 @@ defmodule Commander do
 						end
 						exit(:normal)
 					end
+					waitfor
 				else
 					send leader, { :preempted, b }
 					exit(:normal)
