@@ -1,3 +1,5 @@
+# Pinchu Ye (py416) and Chuanqing Lu (cl5616)
+
 defmodule Scout do
 	def start leader, acceptors, ballot_num do
 		waitfor = acceptors
@@ -26,6 +28,6 @@ defmodule Scout do
 			end
 			next leader, acceptors, ballot_num, waitfor, pvalues
 		end
-		
+
 	end
 end

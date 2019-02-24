@@ -1,3 +1,5 @@
+# Pinchu Ye (py416) and Chuanqing Lu (cl5616)
+
 defmodule Commander do
 	def start leader, acceptors, replicas, p do
 		waitfor = acceptors
