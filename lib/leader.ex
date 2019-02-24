@@ -1,5 +1,5 @@
 defmodule Leader do
-	@time_slot 75
+	@time_slot 90
 	def start _ do
 		ballot_num = {0, self()}
 		active = false
