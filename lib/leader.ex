@@ -1,3 +1,5 @@
+# Pinchu Ye (py416) and Chuanqing Lu (cl5616)
+
 defmodule Leader do
 	@time_slot 90
 	def start _ do
@@ -26,7 +28,7 @@ defmodule Leader do
 				end
 				next acceptors, replicas, ballot_num, active, proposals, collisions
 			{ :adopted, ballot_num, pvals } ->
-				pvals_list = MapSet.to_list(pvals)	
+				pvals_list = MapSet.to_list(pvals)
 				slot_group = Enum.group_by(pvals_list, fn {_,s,_} -> s end)
 				pmax =
 				for {_, v} <- slot_group do

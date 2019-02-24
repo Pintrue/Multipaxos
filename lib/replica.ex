@@ -1,3 +1,5 @@
+# Pinchu Ye (py416) and Chuanqing Lu (cl5616)
+
 defmodule Replica do
 	@window 5
 	def start _, database, monitor do
