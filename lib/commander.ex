@@ -15,6 +15,7 @@ defmodule Commander do
 				if b == ballot_num do
 					waitfor = waitfor -- [a]
 					if length(waitfor) < length(acceptors) / 2 do
+						# IO.puts "#{inspect self} send decisions"
 						for rep <- replicas do
 							send rep, { :decision, s, c }
 						end
