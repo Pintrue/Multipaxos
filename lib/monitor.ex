@@ -71,12 +71,10 @@ defp next config, clock, requests, updates, transactions, scouts, commanders do
     IO.puts "time = #{clock}  updates done = #{inspect sorted}"
     sorted = requests |> Map.to_list |> List.keysort(0)
     IO.puts "time = #{clock} requests seen = #{inspect sorted}"
-    # exp_updates = Enum.reduce(sorted, 0, fn {_, x}, acc -> x + acc end)
-    # IO.puts "time = #{clock} expected updates = #{inspect exp_updates}"
 
     if config.debug_level == 1 do
       min_done = updates |> Map.values |> Enum.min
-      n_requests = requests |> Map.values |> Enum.sum
+      n_requests = requests |> Map.values |> Enum.sum#Enum.sum
       IO.puts "time = #{clock}    total seen = #{n_requests} max lag = #{n_requests-min_done}"
 
       sorted = scouts |> Map.to_list |> List.keysort(0)

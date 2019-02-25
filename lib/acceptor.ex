@@ -8,6 +8,8 @@ defmodule Acceptor do
 	end
 
 	def next ballot_num, accepted do
+		# sorted = accepted |> MapSet.to_list |> List.keysort(1)
+		# IO.inspect sorted
 		receive do
 			{ :p1a, leader, b } ->
 				ballot_num =

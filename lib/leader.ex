@@ -45,7 +45,7 @@ defmodule Leader do
 
 				collisions = if collisions == 0 do 0 else collisions - 1 end
 				next monitor, acceptors, replicas, ballot_num, active, proposals, collisions
-			{ :preempted, {r, _} } ->
+			{ :preempted, b } ->
 				# send monitor, { :scout_finished, self() }
 				collisions = collisions + 1
 				max_wait = (trunc(:math.pow(2, collisions)) - 1) * @time_slot
@@ -54,10 +54,11 @@ defmodule Leader do
 				# IO.puts "#{inspect self} going to sleep for #{inspect rand} ms"
 				Process.sleep(rand)
 
-				{b, _} = ballot_num
+				# {b, _} = ballot_num
 				{active, ballot_num} =
-				if r >= b do
+				if b > ballot_num do
 					active = false
+					{r, _} = b
 					ballot_num = {r + 1, self()}
 					spawn Scout, :start, [self(), acceptors, ballot_num, monitor]
 					# send monitor, { :scout_spawned, self() }
