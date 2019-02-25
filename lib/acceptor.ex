@@ -1,3 +1,4 @@
+# Pinchu Ye (py416) and Chuanqing Lu (cl5616)
 defmodule Acceptor do
 	def start _ do
 		# magic number ordered before any ballot sent by leaders
