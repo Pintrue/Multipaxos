@@ -1,13 +1,14 @@
 defmodule Commander do
-	def start leader, acceptors, replicas, p do
+	def start leader, acceptors, replicas, p, monitor do
+		send monitor, { :commander_spawned, leader }
 		waitfor = acceptors
 		for acceptor <- acceptors do
 			send acceptor, { :p2a, self(), p }
 		end
-		next leader, acceptors, replicas, p, waitfor
+		next leader, acceptors, replicas, p, waitfor, monitor
 	end
 
-	def next leader, acceptors, replicas, p, waitfor do
+	def next leader, acceptors, replicas, p, waitfor, monitor do
 		receive do
 			{ :p2b, a, b } ->
 				{ballot_num, s, c} = p
@@ -19,14 +20,16 @@ defmodule Commander do
 						for rep <- replicas do
 							send rep, { :decision, s, c }
 						end
+						send monitor, { :commander_finished, leader }
 						exit(:normal)
 					end
 					waitfor
 				else
 					send leader, { :preempted, b }
+					send monitor, { :commander_finished, leader }
 					exit(:normal)
 				end
-				next leader, acceptors, replicas, p, waitfor
+				next leader, acceptors, replicas, p, waitfor, monitor
 		end
 	end
 end

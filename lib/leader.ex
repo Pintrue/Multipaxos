@@ -5,26 +5,27 @@ defmodule Leader do
 		active = false
 		proposals = Map.new()
 		receive do
-			{ :bind, acceptors, replicas } ->
-				spawn Scout, :start, [self(), acceptors, ballot_num]
-				next acceptors, replicas, ballot_num, active, proposals, 0
+			{ :bind, acceptors, replicas, monitor } ->
+				spawn Scout, :start, [self(), acceptors, ballot_num, monitor]
+				# send monitor, { :scout_spawned, self() }
+				next monitor, acceptors, replicas, ballot_num, active, proposals, 0
 		end
 	end
 
-	def next acceptors, replicas, ballot_num, active, proposals, collisions do
+	def next monitor, acceptors, replicas, ballot_num, active, proposals, collisions do
 		receive do
 			{ :propose, s, c } ->
 				proposals =
 				if not Map.has_key?(proposals, s) do
 					proposals = Map.put(proposals, s, c)
 					if active do
-						spawn Commander, :start, [self(), acceptors, replicas, {ballot_num, s, c}]
+						spawn Commander, :start, [self(), acceptors, replicas, {ballot_num, s, c}, monitor]
 					end
 					proposals
 				else
 					proposals
 				end
-				next acceptors, replicas, ballot_num, active, proposals, collisions
+				next monitor, acceptors, replicas, ballot_num, active, proposals, collisions
 			{ :adopted, ballot_num, pvals } ->
 				pvals_list = MapSet.to_list(pvals)	
 				slot_group = Enum.group_by(pvals_list, fn {_,s,_} -> s end)
@@ -36,13 +37,14 @@ defmodule Leader do
 				end
 				proposals = Map.merge(proposals, Enum.into(pmax, %{}))
 				for {s, c} <- proposals do
-					spawn Commander, :start, [self(), acceptors, replicas, {ballot_num, s, c}]
+					spawn Commander, :start, [self(), acceptors, replicas, {ballot_num, s, c}, monitor]
 				end
 				active = true
 
 				collisions = if collisions == 0 do 0 else collisions - 1 end
-				next acceptors, replicas, ballot_num, active, proposals, collisions
+				next monitor, acceptors, replicas, ballot_num, active, proposals, collisions
 			{ :preempted, {r, _} } ->
+				# send monitor, { :scout_finished, self() }
 				collisions = collisions + 1
 				max_wait = (trunc(:math.pow(2, collisions)) - 1) * @time_slot
 				# IO.inspect {self, max_wait}
@@ -55,12 +57,13 @@ defmodule Leader do
 				if r >= b do
 					active = false
 					ballot_num = {r + 1, self()}
-					spawn Scout, :start, [self(), acceptors, ballot_num]
+					spawn Scout, :start, [self(), acceptors, ballot_num, monitor]
+					# send monitor, { :scout_spawned, self() }
 					{active, ballot_num}
 				else
 					{active, ballot_num}
 				end
-				next acceptors, replicas, ballot_num, active, proposals, collisions
+				next monitor, acceptors, replicas, ballot_num, active, proposals, collisions
 		end
 	end
 end

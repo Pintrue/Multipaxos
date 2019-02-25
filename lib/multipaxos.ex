@@ -28,7 +28,7 @@ defp start config do
 	{ replicas, acceptors, leaders } = DAC.unzip3 server_components
 
 	for replica <- replicas, do: send replica, { :bind, leaders }
-	for leader  <- leaders,  do: send leader,  { :bind, acceptors, replicas }
+	for leader  <- leaders,  do: send leader,  { :bind, acceptors, replicas, monitor }
 
 	for c <- 1 .. config.n_clients do 
 		node_name = DAC.node_name config, "client", c
