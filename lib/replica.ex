@@ -10,7 +10,7 @@ defmodule Replica do
 		decisions = Map.new()
 		receive do
 			{ :bind, leaders } ->
-				body slot_in, slot_out, requests, proposals, decisions, leaders, database, monitor
+				body slot_in, slot_out, requests, proposals, decisions, leaders, database, monitor, MapSet.new
 		end
 	end
 
@@ -35,34 +35,52 @@ defmodule Replica do
 		end
 	end
 
-	def perform slot_out, decisions, database, cmd do
+	def perform slot_out, decisions, database, cmd, exe do
 		decisions_l = Map.to_list(decisions)
-		d = List.keyfind(decisions_l, cmd, 1)
-		if not (d != nil and Enum.at(Tuple.to_list(d), 0) < slot_out) do
-			{_, _, op} = cmd
-			send database, { :execute, op }
+
+		sorted = decisions_l |> List.keysort(0)
+		# IO.inspect sorted
+		# IO.puts "Looking for command #{inspect cmd}"
+
+		exe =
+		if not MapSet.member?(exe, cmd) do
+			d = List.keyfind(decisions_l, cmd, 1)
+			if not (d != nil and Enum.at(Tuple.to_list(d), 0) < slot_out) do
+				# IO.puts "Found command #{inspect d} with slot out #{slot_out}"
+				{_, _, op} = cmd
+				send database, { :execute, op }
+				MapSet.put(exe, cmd)
+			else
+				exe
+			end
+		else
+			exe
 		end
-		slot_out + 1
+
+		{slot_out + 1, exe}
 	end
 
-	def body slot_in, slot_out, requests, proposals, decisions, leaders, database, monitor do
-		{slot_out, decisions, proposals, requests} =
+	def body slot_in, slot_out, requests, proposals, decisions, leaders, database, monitor, exe do
+		{slot_out, decisions, proposals, requests, exe} =
 		receive do
 			{ :client_request, c } ->
 				requests = MapSet.put(requests, c)
 				send monitor, { :client_request, self() }
-				{slot_out, decisions, proposals, requests}
+				{slot_out, decisions, proposals, requests, exe}
 			{ :decision, s, c } ->
+				# if Map.has_key?(decisions, s) and decisions[s] == c do
+				# 	IO.puts "Duplicate"
+				# end
 				decisions = Map.put(decisions, s, c)
-				{slot_out, proposals, requests} = while_perform decisions, slot_out, proposals, requests, database
-				{slot_out, decisions, proposals, requests}
+				{slot_out, proposals, requests, exe} = while_perform decisions, slot_out, proposals, requests, database, exe
+				{slot_out, decisions, proposals, requests, exe}
 		end
 		{slot_in, requests, proposals} = propose slot_in, slot_out, requests, proposals, decisions, leaders
-		body slot_in, slot_out, requests, proposals, decisions, leaders, database, monitor
+		body slot_in, slot_out, requests, proposals, decisions, leaders, database, monitor, exe
 	end
 
 
-	def while_perform decisions, slot_out, proposals, requests, database do
+	def while_perform decisions, slot_out, proposals, requests, database, exe do
 		all_d_slots = Map.keys(decisions)
 		if Enum.member?(all_d_slots, slot_out) do
 			c_dec = Map.get(decisions, slot_out)
@@ -81,10 +99,10 @@ defmodule Replica do
 			else
 				{proposals, requests}
 			end
-			slot_out = perform slot_out, decisions, database, c_dec
-			while_perform decisions, slot_out, proposals, requests, database
+			{slot_out, exe} = perform slot_out, decisions, database, c_dec, exe
+			while_perform decisions, slot_out, proposals, requests, database, exe
 		else
-			{slot_out, proposals, requests}
+			{slot_out, proposals, requests, exe}
 		end
 	end
 end
